@@ -66,10 +66,10 @@
     
     if ([self retrieveDataFromAPI])
     {
-        [self performSelectorOnMainThread:@selector(setupViews) withObject:nil waitUntilDone:NO];
+       // [self performSelectorOnMainThread:@selector(setupViews) withObject:nil waitUntilDone:NO];
     }else{
         //        [self setupErrorPage];
-        //NSLog(@"setupFailed");
+        NSLog(@"setupFailed");
     }
 }
 
@@ -138,14 +138,14 @@
 
 - (void)viewDidAppear:(BOOL)animated
 {
-    //NSLog(@"vda");
+    NSLog(@"vda");
     
     if ([self retrieveDataFromAPI])
     {
         [self.contentView setHidden:NO];
         [self performSelectorOnMainThread:@selector(setupViews) withObject:nil waitUntilDone:NO];
     }else{
-        //NSLog(@"setupFailed");
+        NSLog(@"setupFailed");
         [self displayRequestProblemError];
     }
 
@@ -169,7 +169,7 @@
 
 - (void)setupViews
 {
-    //NSLog(@"setupViews");
+    NSLog(@"setupViews");
     
     self.fNameLabel.text = [NSString stringWithFormat:@"%@ %@",self.fName,self.lName];
     self.emailLabel.text = self.email;
@@ -183,38 +183,40 @@
     else {
         [self fGender];
     }
-    
+    NSLog(@"ADDRESS :%@",self.addressArray);
     //setup address list view
     CGFloat aHeight = 0;
     int ind = 1;
-    for (id row in self.addressArray)
-    {
-        CustomAddress *addrs = [[CustomAddress alloc] initWithFrame:CGRectMake(0, kStartAddressY + aHeight, 320, 46)];
-        aHeight = aHeight + addrs.frame.size.height;
-        addrs.addressLabel.text = [NSString stringWithFormat:@"Address %d\n%@",ind++,[row objectForKey:@"address"]];
-        
-        if ([[row objectForKey:@"addressIsPrimary"] isEqualToString:@"Y"]) {
-            [addrs.addressButton setImage:[UIImage imageNamed:@"checkbox_active"] forState:UIControlStateNormal];
-            [addrs.primaryLabel setText:@"Primary"];
-        } else {
-            addrs.addressButton.tag = [[row objectForKey:@"addressId"] intValue];
-            [addrs.addressButton addTarget:self action:@selector(setPrime:) forControlEvents:UIControlEventTouchUpInside];
+    if ([self.addressArray isKindOfClass:[NSArray class]]) {
+        for (id row in self.addressArray)
+        {
+            CustomAddress *addrs = [[CustomAddress alloc] initWithFrame:CGRectMake(0, kStartAddressY + aHeight, 320, 46)];
+            aHeight = aHeight + addrs.frame.size.height;
+            addrs.addressLabel.text = [NSString stringWithFormat:@"Address %d\n%@",ind++,[row objectForKey:@"address"]];
+            
+            if ([[row objectForKey:@"addressIsPrimary"] isEqualToString:@"Y"]) {
+                [addrs.addressButton setImage:[UIImage imageNamed:@"checkbox_active"] forState:UIControlStateNormal];
+                [addrs.primaryLabel setText:@"Primary"];
+            } else {
+                addrs.addressButton.tag = [[row objectForKey:@"addressId"] intValue];
+                [addrs.addressButton addTarget:self action:@selector(setPrime:) forControlEvents:UIControlEventTouchUpInside];
+            }
+            addrs.addressLabel.userInteractionEnabled = YES;
+            UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(deleteAddress:)];
+            swipe.direction = UISwipeGestureRecognizerDirectionRight;
+            swipe.numberOfTouchesRequired = 1;
+            [addrs.addressLabel addGestureRecognizer:swipe];
+            
+            addrs.addressLabel.tag = [[row objectForKey:@"addressId"] intValue];
+            UITapGestureRecognizer *tapEditMail = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(editMail:)];
+            [addrs.addressLabel addGestureRecognizer:tapEditMail];
+            [tapEditMail release];
+            [self.view addSubview:addrs];
+            [addrs release];
         }
-        addrs.addressLabel.userInteractionEnabled = YES;
-        UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(deleteAddress:)];
-        swipe.direction = UISwipeGestureRecognizerDirectionRight;
-        swipe.numberOfTouchesRequired = 1;
-        [addrs.addressLabel addGestureRecognizer:swipe];
-        
-        addrs.addressLabel.tag = [[row objectForKey:@"addressId"] intValue];
-        UITapGestureRecognizer *tapEditMail = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(editMail:)];
-        [addrs.addressLabel addGestureRecognizer:tapEditMail];
-        [tapEditMail release];
-        [self.view addSubview:addrs];
-        [addrs release];
     }
     
-    //NSLog(@" height:%f",aHeight);
+    NSLog(@" height:%f",aHeight);
     //setup mailButton & saveButton
     CGFloat aHeightMail = kStartAddressY+aHeight;
     self.mailButton.frame = CGRectMake(0, aHeightMail, self.mailButton.frame.size.width, self.mailButton.frame.size.height);
@@ -294,9 +296,9 @@
     NSString *dataContent = [NSString stringWithFormat:@"{\"flag\":\"%@\"}",self.flag];
     
     NSString *response = [ASIWrapper requestPostJSONWithStringURL:urlString andDataContent:dataContent];
-    //    //NSLog(@"request %@\n%@\n\nresponse retrieveData: %@", urlString, dataContent, response);
+    //    NSLog(@"request %@\n%@\n\nresponse retrieveData: %@", urlString, dataContent, response);
     NSDictionary *resultsDictionary = [[response objectFromJSONString] mutableCopy];
-    //    //NSLog(@"dict %@",resultsDictionary);
+    //    NSLog(@"dict %@",resultsDictionary);
     
     if([resultsDictionary count])
     {
@@ -317,20 +319,20 @@
             self.email = [resultProfile objectForKey:@"email"];
             self.password = [resultProfile objectForKey:@"password"];
             NSString *urlImg = [resultProfile objectForKey:@"avatar_url"];
-            //NSLog(@"urlImg :%@",urlImg);
+            NSLog(@"urlImg :%@",urlImg);
             [self.profileImage setImageWithURL:[NSURL URLWithString:urlImg]
                               placeholderImage:[UIImage imageNamed:@"blank_avatar.png"]];
             //     img = [UIImage imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:urlImg]]];
-            //      //NSLog(@"urlImg :%@",img);
+            //      NSLog(@"urlImg :%@",img);
             //    [self.imgPro setImage:img];
             //            [img release];
-            
+            self.addressArray = nil;
             if (! [[resultsDictionary objectForKey:@"address"] isKindOfClass:[NSString class]]){
                 //isKindOfClass: -> untuk check kalau [resultsDictionary objectForKey:@"address"] ni class apa? contohnya dekat sini, aku check kalau [resultsDictionary objectForKey:@"address"] bukan class string, baru check address. Sebab API kalau kosong dia return "" (string)
                 resultAddress = [resultsDictionary objectForKey:@"address"];
                 
                 self.addressArray = resultAddress;
-                //NSLog(@"%@",resultAddress);
+                NSLog(@"RESULTADDRESS :%@",resultAddress);
                 for (id row in resultAddress)
                 {
                     MData *aData = [[MData alloc] init];
@@ -339,7 +341,7 @@
                     aData.address = [row objectForKey:@"address"];
                     aData.city = [row objectForKey:@"city"];
                     aData.postcode = [row objectForKey:@"postcode"];
-                    //NSLog(@"%@", [[row objectForKey:@"state"] class]);
+                    NSLog(@"%@", [[row objectForKey:@"state"] class]);
                     if ([[row objectForKey:@"state"] isKindOfClass:[NSNull class]]){
                     
                         aData.state = @"";
@@ -349,7 +351,7 @@
                         
                         aData.state = [row objectForKey:@"state"];
                     }
-                     //NSLog(@"%@", [aData.state class]);
+                     NSLog(@"%@", [aData.state class]);
                     aData.country = [row objectForKey:@"country"];
                     aData.addressIsPrimary = [row objectForKey:@"addressIsPrimary"];
                 }
@@ -393,13 +395,13 @@
     }else if(alertView.tag == kAlertSave){
         if (buttonIndex == 1) {
             [DejalBezelActivityView activityViewForView:self.view withLabel:@"Loading ..." width:100];
-            //NSLog(@"saved");
+            NSLog(@"saved");
             [self performSelector:@selector(processSaveChange) withObject:nil afterDelay:0.0];
         }
     }else {
         if (buttonIndex == 1) {
             [DejalBezelActivityView activityViewForView:self.view withLabel:@"Deleting ..." width:100];
-            //NSLog(@"saved :%d",alertView.tag);
+            NSLog(@"saved :%d",alertView.tag);
             [self performSelector:@selector(processDeleteAddress) withObject:nil afterDelay:0.0];
         }
     }
@@ -419,7 +421,7 @@
 
 - (void)processSaveChange
 {
-    //NSLog(@"process save");
+    NSLog(@"process save");
     self.flag = @"SAVE_PROFILE";
     NSString *urlString = [NSString stringWithFormat:@"%@/api/settings_jambulite_profile.php?token=%@",APP_API_URL,[[[NSUserDefaults standardUserDefaults] objectForKey:@"tokenString"]mutableCopy]];
 
@@ -441,28 +443,26 @@
         dataContent = [dataContent stringByAppendingFormat:@",\"passNew\":\"%@\"",self.reNewPasswordTextField.text];
     }
     dataContent = [dataContent stringByAppendingFormat:@"}"];
-    //NSLog(@"Data :%@",dataContent);
+    NSLog(@"Data :%@",dataContent);
     NSString *response = [ASIWrapper requestPostJSONWithStringURL:urlString andDataContent:dataContent];
-    //NSLog(@"abc: %@, def:%@",dataContent, response);
+    NSLog(@"abc: %@, def:%@",dataContent, response);
     NSDictionary *resultsDictionary = [[response objectFromJSONString] mutableCopy];
-    //NSLog(@"dict %@",resultsDictionary);
+    NSLog(@"dict %@",resultsDictionary);
     if([resultsDictionary count])
-    { //NSLog(@"masuk2");
+    { NSLog(@"masuk2");
         NSString *status = [resultsDictionary objectForKey:@"status"];
         NSString *msg = [resultsDictionary objectForKey:@"message"];
         
         if ([status isEqualToString:@"ok"]) {
-            //NSLog(@"Successfully save change!");
-            [self reloadView];
-            SidebarView *sbar = [[SidebarView alloc] init];
-            [sbar reloadImage];
-            [sbar release];
+            NSLog(@"Successfully save change!");
+            [[NSNotificationCenter defaultCenter]postNotificationName:@"reloadView"object:self];
+            [[NSNotificationCenter defaultCenter]postNotificationName:@"reloadImage"object:self];
         }
         CustomAlertView *alert = [[CustomAlertView alloc] initWithTitle:@"Jambulite Profile" message:msg delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [alert show];
         [alert release];
     }
-    //NSLog(@"end saved");
+    NSLog(@"end saved");
     [DejalBezelActivityView removeViewAnimated:YES];
 }
 
@@ -487,13 +487,13 @@
 
 - (void)editMail:(id)sender
 {
-    //NSLog(@"ID sender :%d",[(UIGestureRecognizer *)sender view].tag);
+    NSLog(@"ID sender :%d",[(UIGestureRecognizer *)sender view].tag);
     int ind = [(UIGestureRecognizer *)sender view].tag;
     for (id row in self.addressArray)
     {
-        //NSLog(@"loop edit address");
+        NSLog(@"loop edit address");
         if ([[row objectForKey:@"addressId"] intValue] == ind) {
-            //NSLog(@"editMailView");
+            NSLog(@"editMailView");
             EditMailViewController *amvc = [[EditMailViewController alloc] init];
             amvc.addressId = [row objectForKey:@"addressId"];
             amvc.address = [row objectForKey:@"address"];
@@ -513,7 +513,7 @@
 - (void)setPrime:(id)sender
 {
     UIButton* aid = (UIButton*) sender;
-    //NSLog(@"tag=%d",aid.tag);
+    NSLog(@"tag=%d",aid.tag);
     self.flag = @"SET_PRIMARY_ADDRESS";
     
     NSString *urlString = [NSString stringWithFormat:@"%@/api/settings_jambulite_profile.php?token=%@",APP_API_URL,[[[NSUserDefaults standardUserDefaults] objectForKey:@"tokenString"]mutableCopy]];
@@ -522,9 +522,9 @@
                              (long)aid.tag];
     
     NSString *response = [ASIWrapper requestPostJSONWithStringURL:urlString andDataContent:dataContent];
-    //NSLog(@"request %@\n%@\n\nresponse dataSetPrime: %@", urlString, dataContent, response);
+    NSLog(@"request %@\n%@\n\nresponse dataSetPrime: %@", urlString, dataContent, response);
     NSDictionary *resultsDictionary = [[response objectFromJSONString] mutableCopy];
-    //NSLog(@"dict %@",resultsDictionary);
+    NSLog(@"dict %@",resultsDictionary);
     
     if([resultsDictionary count])
     {
@@ -532,7 +532,7 @@
         NSString *msg = [resultsDictionary objectForKey:@"message"];
         
         if ([status isEqualToString:@"ok"]) {
-            //NSLog(@"Successfully set primary address!");
+            NSLog(@"Successfully set primary address!");
             [DejalBezelActivityView activityViewForView:self.view withLabel:@"Saving ..." width:100];
             [self performSelector:@selector(reloadView) withObject:nil afterDelay:0.2];
         }
@@ -542,13 +542,13 @@
             [alert release];
         }
     }
-    //NSLog(@"end saved");
+    NSLog(@"end saved");
 }
 
 - (void)deleteAddress:(id)sender
 {
     [self.view endEditing:YES];
-    //NSLog(@"ID sent :%d",[(UIGestureRecognizer *)sender view].tag);
+    NSLog(@"ID sent :%d",[(UIGestureRecognizer *)sender view].tag);
     int ind = [(UIGestureRecognizer *)sender view].tag;
     addressIdTag = ind;
     // If OK, go to alertview delegate
@@ -566,7 +566,7 @@
                              flag,addressIdTag];
     
     NSString *response = [ASIWrapper requestPostJSONWithStringURL:urlString andDataContent:dataContent];
-    //NSLog(@"abc: %@, def:%@",dataContent, response);
+    NSLog(@"abc: %@, def:%@",dataContent, response);
     NSDictionary *resultsDictionary = [[response objectFromJSONString] mutableCopy];
     
     if([resultsDictionary count])
@@ -575,9 +575,9 @@
         NSString *msg = [resultsDictionary objectForKey:@"message"];
         
         if ([status isEqualToString:@"ok"]) {
-            //NSLog(@"Successfully delete address!");
+            NSLog(@"Successfully delete address!");
             [self removeMailView];
-            [self reloadView];
+            [[NSNotificationCenter defaultCenter]postNotificationName:@"reloadView"object:self];
         }
         else {
             CustomAlertView *alert = [[CustomAlertView alloc] initWithTitle:@"Address Profile" message:msg delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
@@ -611,7 +611,7 @@
 - (void) receiveTestNotification:(NSNotification *) notification
 {
     if ([[notification name] isEqualToString:@"reloadView"]) {
-        //NSLog (@"Successfully reload view!");
+        NSLog (@"Successfully reload view!");
 //        [self loadData];
         [self retrieveDataFromAPI];
         [self setupViews];
@@ -630,7 +630,7 @@
 
 - (void)mGender
 {
-    //NSLog(@"tapped MALE");
+    NSLog(@"tapped MALE");
     gen = @"M";
     self.maleLabel.userInteractionEnabled = NO;
     self.femaleLabel.userInteractionEnabled = YES;
@@ -640,7 +640,7 @@
 
 - (void)fGender
 {
-    //NSLog(@"tapped FEMALE");
+    NSLog(@"tapped FEMALE");
     gen = @"F";
     self.maleLabel.userInteractionEnabled = YES;
     self.femaleLabel.userInteractionEnabled = NO;
@@ -677,14 +677,14 @@
     self.currTag = textField.tag;
     if (self.currTag == 1) {
         // auto scroll to bottom
-        //NSLog(@"jeng :%f",self.scroller.bounds.size.height);
+        NSLog(@"jeng :%f",self.scroller.bounds.size.height);
         CGPoint bottomOffset = CGPointMake(0, self.scroller.bounds.size.height - 50);
         [self.scroller setContentOffset:bottomOffset animated:YES];
     }
     else if (self.currTag == 2) {
         CGPoint bottomOffset = CGPointMake(0, self.scroller.bounds.size.height + 150);
         [self.scroller setContentOffset:bottomOffset animated:YES];
-        //NSLog(@"jeng2 :%f",self.scroller.contentSize.height - self.scroller.bounds.size.height);
+        NSLog(@"jeng2 :%f",self.scroller.contentSize.height - self.scroller.bounds.size.height);
     }
 }
 
@@ -699,7 +699,7 @@
 
 - (IBAction)pickerDoneClicked:(id)sender
 {
-    //NSLog(@"currTag: %d",self.currTag);
+    NSLog(@"currTag: %d",self.currTag);
     
     UITextField *currTextField = (UITextField *)[self.view viewWithTag:self.currTag];
     NSDate *newDate = [[NSDate alloc] init];
@@ -714,7 +714,7 @@
     
     currTextField.text = [format stringFromDate:newDate];
     
-    //NSLog(@"%@",currTextField.text);
+    NSLog(@"%@",currTextField.text);
     [format release];
     [currTextField resignFirstResponder];
 }
