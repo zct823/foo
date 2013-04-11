@@ -34,6 +34,8 @@
 //    NSInteger kStartDescriptionY; //edited define hash
 }
 
+@property (retain, nonatomic) IBOutlet UILabel *optionLabel;
+@property (retain, nonatomic) IBOutlet UIImageView *greenLine;
 @property BOOL noInternetConnection;
 @property (retain, nonatomic) UILabel *providerLabel;
 @property (nonatomic, retain) NSString *newsId;
@@ -63,12 +65,17 @@
 @property (retain, nonatomic) IBOutlet UIButton *shareFBButton;
 @property (retain, nonatomic) IBOutlet UIButton *shareTwitterButton;
 @property (retain, nonatomic) IBOutlet UIButton *shareEmailButton;
-@property (nonatomic,retain) IBOutlet UIButton *btnUnfollow;
-@property (nonatomic,retain) IBOutlet UIButton *btnFav;
+
+@property (nonatomic, retain) IBOutlet UIButton *btnUnfollow;
+@property (nonatomic, retain) IBOutlet UIButton *btnFav;
+@property (nonatomic) NSInteger subscriptionStatus;
+@property (nonatomic) NSInteger detectedCatID;
+
 @property (retain, nonatomic) IBOutlet UIView *blankView;
 @property (retain, nonatomic) IBOutlet UILabel *label;
 @property (retain, nonatomic) IBOutlet UIActivityIndicatorView *activity;
 @property (retain, nonatomic) NSString *aAddress;
+@property (retain, nonatomic) IBOutlet UIButton *btnReport;
 
 
 @property (nonatomic, retain) EKEventStore *eventStore;

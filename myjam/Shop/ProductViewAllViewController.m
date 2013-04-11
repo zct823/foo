@@ -7,6 +7,8 @@
 //
 
 #import "ProductViewAllViewController.h"
+#import "ProductHeaderViewCell.h"
+
 #define kTableCellHeightM 130
 @interface ProductViewAllViewController ()
 
@@ -114,13 +116,13 @@
     static NSString *CellIdentifier = @"Cell";
     if(indexPath.row == 0){
         //ShopHeaderViewCell *cell = (ShopHeaderViewCell*)[tableView dequeueReusableCellWithIdentifier:CellIdentifier];
-        CustomHeaderCell *cell = (CustomHeaderCell*)[tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+        ProductHeaderViewCell *cell = (ProductHeaderViewCell*)[tableView dequeueReusableCellWithIdentifier:CellIdentifier];
         if (cell == nil)
         {
-            NSArray *nib = [[NSBundle mainBundle] loadNibNamed:@"CustomHeaderCell" owner:nil options:nil];
+            NSArray *nib = [[NSBundle mainBundle] loadNibNamed:@"ProductHeaderViewCell" owner:nil options:nil];
             cell = [nib objectAtIndex:0];
         }
-//        cell.shopLabel.text = [self.shopInfo valueForKey:@"shop_name"];
+        cell.shopLabel.text = [self.shopInfo valueForKey:@"shop_name"];
 //        if([[self.shopInfo valueForKey:@"shop_top_seller"] isEqual:@"Y"]){
 //            cell.topSellerLabel.hidden=NO;
 //        }
@@ -153,7 +155,7 @@
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (indexPath.row == 0){
-        return 44;
+        return 70;
     }
     else{
         return kTableCellHeightM;

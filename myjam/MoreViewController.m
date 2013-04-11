@@ -84,17 +84,23 @@
     
     AppDelegate *mydelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
     
-    if ([mydelegate.swipeOptionString isEqualToString:@"scan"] || [mydelegate.swipeOptionString isEqualToString:@"share"] || [mydelegate.swipeOptionString isEqualToString:@"favourite"] || [mydelegate.swipeOptionString isEqualToString:@"create"])
+    if ([mydelegate.swipeOptionString isEqualToString:@"share"] || [mydelegate.swipeOptionString isEqualToString:@"create"])
     {
         //NSLog(@"Hiding unfollow and favourite btn");
         [self.btnFav setHidden:YES];
         [self.btnUnfollow setHidden:YES];
     }
-    else
+    else if([mydelegate.swipeOptionString isEqualToString:@"scan"])
+    {
+        //NSLog(@"Staying unfollow and favourite btn");
+        [self.btnFav setHidden:YES];
+        [self.btnUnfollow setHidden:NO];
+    }
+    else if([mydelegate.swipeOptionString isEqualToString:@"favourite"])
     {
         //NSLog(@"Staying unfollow and favourite btn");
         [self.btnFav setHidden:NO];
-        [self.btnUnfollow setHidden:NO];
+        [self.btnUnfollow setHidden:YES];
     }
     
     HomeViewController *home = [mydelegate.homeNavController.viewControllers objectAtIndex:0];
@@ -145,6 +151,16 @@
         
     }
     
+    if ([self.detailsData.qrcodeType isEqualToString:@"News"]) {
+        [self checkIfThePostIsFollowedOrNot];
+    }
+    else{
+        [self.btnUnfollow setHidden:YES];
+        [self.btnReport setHidden:YES];
+        [self.optionLabel setHidden:YES];
+        [self.greenLine setHidden:YES];
+    }
+
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -170,29 +186,96 @@
 
 # pragma mark - Follow Button & its Process
 
+- (void)checkIfThePostIsFollowedOrNot
+{
+    NSString *urlString = [NSString stringWithFormat:@"%@/api/settings_news_preference.php?token=%@",APP_API_URL,[[[NSUserDefaults standardUserDefaults] objectForKey:@"tokenString"]mutableCopy]];
+    
+    NSString *dataContent = [NSString stringWithFormat:@"{\"flag\":\"DEFAULT2\"}"];
+    
+    NSString *wrappedDefaultDataFromServer = [ASIWrapper requestPostJSONWithStringURL:urlString andDataContent:dataContent];
+    
+    NSDictionary* wrappedDefaultDataToDictionary = [[wrappedDefaultDataFromServer objectFromJSONString] copy];
+    
+    NSString *currentStatus = nil;
+    
+    if([wrappedDefaultDataToDictionary count])
+    {
+        currentStatus = [wrappedDefaultDataToDictionary objectForKey:@"status"];
+        
+        if ([currentStatus isEqual: @"ok"])
+        {
+            for (id row in [wrappedDefaultDataToDictionary objectForKey:@"preferences"])
+            {
+                if ([[row objectForKey:@"category_name"] isEqualToString:self.detailsData.category])
+                {
+                    self.detectedCatID = [[row objectForKey:@"category_id"]intValue];
+                    if (![[row objectForKey:@"cp"] isKindOfClass:[NSString class]]) {
+                        continue;
+                    }
+                    for (id row2 in [row objectForKey:@"cp"])
+                    {
+                        if ([[row2 objectForKey:@"cp_id"] isEqualToString:self.detailsData.contentProviderUID])
+                        {
+                            self.subscriptionStatus = [[row2 objectForKey:@"subscription"]intValue];
+                            
+                            if (self.subscriptionStatus == 1)
+                            {
+                                [self.btnUnfollow setImage:[UIImage imageNamed:@"btn-follow-unfollow-hr.png"] forState:UIControlStateNormal];
+                            }
+                            else if (self.subscriptionStatus == 0)
+                            {
+                                [self.btnUnfollow setImage:[UIImage imageNamed:@"btn-follow-hr.png"] forState:UIControlStateNormal];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            CustomAlertView *alert = [[CustomAlertView alloc] initWithTitle:@"Follow" message:@"Connection error. Please try again." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            alert.tag = kAlertNoConnection;
+            [alert show];
+            [alert release];
+        }
+    }
+}
+
 - (IBAction)followBtn:(id)sender {
     
-    //NSLog(@"Get Category for this post: %@",self.detailsData.contentProviderUID);
+    if (self.subscriptionStatus == 1)
+    {
+        UnFollowViewController *unFollowVC = [[UnFollowViewController alloc]init];
     
-    UnFollowViewController *unFollowVC = [[UnFollowViewController alloc]init];
+        unFollowVC.categoryName = self.detailsData.contentProvider;
     
-    unFollowVC.categoryName = self.detailsData.contentProvider;
-    
-    [self presentPopupViewController:unFollowVC animationType:MJPopupViewAnimationFade];
+        [self presentPopupViewController:unFollowVC animationType:MJPopupViewAnimationFade];
+    }
+    else if (self.subscriptionStatus == 0)
+    {
+        [self saveToServer];
+    }
     
 }
 
 - (void)saveToServer
 {
-    NSString *urlString = [NSString stringWithFormat:@"%@/api/settings_news_preference.php?token=%@",APP_API_URL,[[[NSUserDefaults standardUserDefaults] objectForKey:@"tokenString"]mutableCopy]];
-    NSString *dataContent = [NSString stringWithFormat:@"{\"flag\":\"UNFOLLOW_CP\",\"cp_id\":\"%@\"}",self.detailsData.contentProviderUID];
     
-    //NSLog(@"Data Content: %@",dataContent);
+    NSString *urlString = [NSString stringWithFormat:@"%@/api/settings_news_preference.php?token=%@",APP_API_URL,[[[NSUserDefaults standardUserDefaults] objectForKey:@"tokenString"]mutableCopy]];
+    
+    NSString *dataContent = nil;
+    
+    if (self.subscriptionStatus == 1)
+    {
+        dataContent = [NSString stringWithFormat:@"{\"flag\":\"UNFOLLOW_CP\",\"cp_id\":\"%@\"}",self.detailsData.contentProviderUID];
+    }
+    else if (self.subscriptionStatus ==0)
+    {
+        dataContent = [NSString stringWithFormat:@"{\"flag\":\"SUBSCRIBE2\",\"category_id\":\"%d\",\"cp_id\":\"%@\"}",self.detectedCatID,self.detailsData.contentProviderUID];
+    }
     
     //=== WRAPPING DATA IN NSSTRING ===//
     NSString *wrappedDefaultDataFromServer = [ASIWrapper requestPostJSONWithStringURL:urlString andDataContent:dataContent];
-    
-    //NSLog(@"Check response for dataContent: %@",wrappedDefaultDataFromServer);
     
     NSDictionary* wrappedDefaultDataToDictionary = [[wrappedDefaultDataFromServer objectFromJSONString] copy];
     
@@ -206,12 +289,21 @@
         {
             [self performSelector:@selector(backToHomeVC) withObject:self afterDelay:0.2];
         }
+        else
+        {
+            CustomAlertView *alert = [[CustomAlertView alloc] initWithTitle:@"Follow" message:@"Connection error. Please try again." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            alert.tag = kAlertNoConnection;
+            [alert show];
+            [alert release];
+        }
     }
     
 }
 
 -(void)backToHomeVC
 {
+    /* Kept as reference
+     
     NewsViewController *newsVC = [[NewsViewController alloc] init];
     
     // Manually change the selected tabButton
@@ -228,6 +320,9 @@
     }
     
     [mydelegate.homeNavController pushViewController:newsVC animated:NO];
+     
+     */
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 # pragma mark - Report Button
@@ -249,15 +344,12 @@
     detailView.qrImage = [self.aImages objectAtIndex:0];
     [self.navigationController pushViewController:detailView animated:YES];
     [detailView release];
-    
 }
 
 # pragma mark -
 
 - (void)handleLoading
 {
-    
-    
     
     [self.activity setHidden:NO];
     [self.label setText:@"Loading ..."];
@@ -472,6 +564,11 @@
     [self.view addSubview:self.shareView];
     [self.shareView release];
     CGFloat scrollerHeight = currentHeight + self.description.frame.size.height + self.shareView.frame.size.height + 50;
+    
+    
+    if (![self.detailsData.qrcodeType isEqualToString:@"News"]) {
+        scrollerHeight -= 60;
+    }
     
     // Adjust view height according to content size
     [self.scroller setContentSize:CGSizeMake(self.contentView.frame.size.width, scrollerHeight)];
@@ -1340,6 +1437,9 @@
 
 - (void)dealloc {
     
+    [_btnReport release];
+    [_greenLine release];
+    [_optionLabel release];
     [super dealloc];
     
     //    [_titleLabel release];
@@ -1367,4 +1467,10 @@
 
 
 
+- (void)viewDidUnload {
+    [self setBtnReport:nil];
+    [self setGreenLine:nil];
+    [self setOptionLabel:nil];
+    [super viewDidUnload];
+}
 @end
