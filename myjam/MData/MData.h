@@ -70,7 +70,7 @@
 @property (nonatomic, retain) NSString *aQRdesc;
 
 // FOR NEAR ME
-@property (nonatomic) NSInteger degreeDecimal;
+//@property (nonatomic) NSInteger degreeDecimal;
 
 
 @end
