@@ -188,10 +188,10 @@
     
     NSString *compassFault = nil;
     double updatedHeading;
-    double radianConst;
+    //double radianConst;
     
     updatedHeading = newHeading.magneticHeading;
-    float headingFloat = 0 - newHeading.magneticHeading;
+    //float headingFloat = 0 - newHeading.magneticHeading;
     
     //rotateImg.transform = CGAffineTransformMakeRotation(headingFloat*radianConst);
     float value = updatedHeading;
